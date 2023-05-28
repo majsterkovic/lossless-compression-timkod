@@ -4,12 +4,21 @@ void Decoder::code() {
     std::cout << "Decoding..." << std::endl;
 
     this->text = "";
-    int n = (int) this->codemap.begin()->first.length();
-    for(int i = 0; i + n < this->coded_text.length(); i=i+n) {
-        std::string code = this->coded_text.substr(i, n);
-        this->text += this->codemap[code];
+    std::string current_code = "";
+    for (const char& bit : this->coded_text) {
+        current_code += bit;
+        if (this->codemap.count(current_code)) {
+            char character = this->codemap[current_code];
+            if (character == '\0') {
+                break;
+            }
+            this->text += character;
+            current_code = "";
+        }
     }
 }
+
+
 
 void Decoder::save() {
     std::cout << "Saving decoded file..." << std::endl;

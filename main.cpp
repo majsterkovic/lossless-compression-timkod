@@ -32,7 +32,7 @@ int main(int argc, char **argv) {
                                             "<todecode_filename>"
                                             "codemap_filename>"
                                             "<decoded_filename>"
-                                             << std::endl;
+                  << std::endl;
         return 1;
     }
 
@@ -49,6 +49,13 @@ int main(int argc, char **argv) {
 
     encoder.load();
     encoder.create_codemap();
+
+    double average_code_length = encoder.compute_average_code_length();
+    std::cout << "Average code length: " << average_code_length << std::endl;
+
+    double efficiency = encoder.compute_efficiency();
+    std::cout << "Efficiency: " << efficiency * 100 << "%" << std::endl;
+
     encoder.save_codemap();
     encoder.code();
     encoder.save();

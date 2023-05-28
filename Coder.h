@@ -17,6 +17,19 @@ protected:
     std::string output_filename;
     std::string codemap_filename;
 
+    struct Node {
+        char symbol;
+        double freq;
+        Node *left;
+        Node *right;
+    };
+
+    struct compare {
+        bool operator()(Node *l, Node *r) {
+            return (l->freq > r->freq);
+        }
+    };
+
 public:
 
     virtual void save() = 0;
