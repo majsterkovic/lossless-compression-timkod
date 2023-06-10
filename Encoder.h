@@ -1,22 +1,19 @@
 #ifndef KODOWANIE_ENCODER_H
 #define KODOWANIE_ENCODER_H
 
-
 #include "Coder.h"
 
-class Encoder : Coder {
+class Encoder : public Coder {
 
 private:
-    std::map<char, std::string> codemap;
+    std::string text;
 
 public:
-    void create_codemap();
     void code() override;
-    void save_codemap();
     void save() override;
     void load() override;
 
-    std::map<char, std::string> get_codemap() const;
+    std::string coded_text;
 
     using Coder::Coder;
 };

@@ -1,61 +1,4 @@
 #include "Encoder.h"
-#include <cmath>
-
-// Konstruktor klasy Encoder, inicjalizuje nazwy plików wejściowych, wyjściowych i pliku z mapą kodów.
-
-
-void Encoder::create_codemap() {
-    std::cout << "Creating codemap..." << std::endl;
-
-    std::string alphabet = "abcdefghijklmnopqrstuvwxyz 0123456789";
-
-    /* Calculate frequencies - use later */
-    std::map<char, double> freq;
-    for (char character: alphabet) {
-        freq[character] = 0;
-    }
-    for (char character: this->text) {
-        freq[character]++;
-    }
-    for (auto &pair: freq) {
-        pair.second /= (double) this->text.size();
-    }
-
-    int n = 1;
-    while (pow(2, n) < (double) alphabet.size() + 1) {
-        n++;
-    }
-
-    for(int i = 0; i < alphabet.size(); i++) {
-        std::string code = std::bitset<8>(i + 1).to_string();
-        code = code.substr(8 - n);
-        this->codemap[alphabet[i]] = code;
-    }
-}
-
-void Encoder::code() {
-    std::cout << "Encoding..." << std::endl;
-
-    for (char character: this->text) {
-        std::string code = this->codemap[character];
-        this->coded_text += code;
-    }
-}
-
-
-void Encoder::save_codemap() {
-    std::cout << "Saving codemap..." << std::endl;
-
-    std::ofstream codemap_file(this->codemap_filename);
-    if (!codemap_file.is_open()) {
-        std::cout << "Error opening file " << this->codemap_filename << std::endl;
-        return;
-    }
-    for (auto &pair: this->codemap) {
-        codemap_file << pair.first << " " << pair.second << std::endl;
-    }
-
-}
 
 
 void Encoder::save() {
@@ -78,9 +21,57 @@ void Encoder::save() {
     encoded_file.write(reinterpret_cast<const char *>(bytes.data()), (long long) bytes.size());
 }
 
+
+void Encoder::code() {
+
+    std::cout << "Encoding..." << std::endl;
+    std::unordered_map<std::string, unsigned int> dictionary;
+
+
+    std::string size_bits_string = std::bitset<32>(text.size()).to_string();
+    coded_text += size_bits_string;
+
+    std::string alphabet;
+    for (int i = 0; i < 256; i++) {
+        alphabet += static_cast<char>(i);
+    }
+
+    for (auto &c : alphabet) {
+        dictionary[std::string(1, c)] = dictionary.size();
+    }
+
+    std::string current = std::string(1, text[0]);
+    int bits;
+    int index;
+
+    for (int i = 0; i < text.size() - 1; i++) {
+        std::string next = std::string(1, text[i + 1]);
+
+        while(dictionary.count(current + next)) {
+            current += next;
+            i++;
+            next = std::string(1, text[i + 1]);
+        }
+
+        bits = ceil(log2((double) dictionary.size()));
+        index = (int) dictionary[current];
+        std::string index_bits_string = std::bitset<32>(index).to_string().substr(32 - bits);
+        coded_text += index_bits_string;
+
+        if (dictionary.size() <= MAX_DICTIONARY_SIZE || MAX_DICTIONARY_SIZE == 0) {
+            dictionary[current + next] = dictionary.size();
+        }
+        current = next;
+    }
+
+    bits = ceil(log2( (double) dictionary.size()));
+    index = (int) dictionary[current];
+    std::string index_bits_string = std::bitset<32>(index).to_string().substr(32 - bits);
+    coded_text += index_bits_string;
+}
+
 void Encoder::load() {
     std::cout << "Loading text file..." << std::endl;
-
     std::ifstream text_file(this->input_filename);
     if (!text_file.is_open()) {
         std::cout << "Error opening file " << input_filename << std::endl;
@@ -92,9 +83,4 @@ void Encoder::load() {
         std::cout << "Error reading file " << input_filename << std::endl;
         return;
     }
-}
-
-
-std::map<char, std::string> Encoder::get_codemap() const {
-    return this->codemap;
 }

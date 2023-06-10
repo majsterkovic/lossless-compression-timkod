@@ -1,28 +1,58 @@
+#include <unordered_map>
 #include "Decoder.h"
 
 void Decoder::code() {
     std::cout << "Decoding..." << std::endl;
 
-    this->text = "";
-    int n = (int) this->codemap.begin()->first.length();
-    for(int i = 0; i + n < this->coded_text.length(); i=i+n) {
-        std::string code = this->coded_text.substr(i, n);
-        this->text += this->codemap[code];
+    std::string text_size = std::bitset<32>(coded_text.substr(0, 32)).to_string();
+    unsigned int size =  std::bitset<32>(coded_text.substr(0, 32)).to_ulong();
+    coded_text = coded_text.substr(32);
+
+    std::unordered_map<unsigned int, std::string> dictionary;
+    std::string alphabet;
+    for (int i = 0; i < 256; i++) {
+        alphabet += static_cast<char>(i);
+    }
+
+    for (auto &c : alphabet) {
+        dictionary[dictionary.size()] = std::string(1, c);
+    }
+
+    int bits = ceil(log2( (double) dictionary.size()));
+    unsigned int nextInt = std::bitset<32>(coded_text.substr(0, bits)).to_ulong();
+    std::string old = dictionary[nextInt];
+    this->text = old;
+    std::string c;
+    std::string word;
+
+    for (unsigned int i = bits; i < coded_text.size();) {
+        if (dictionary.size() >= (1u << bits)) { bits++; }
+
+        if (i + bits > coded_text.size()) { break; }
+
+        nextInt = std::bitset<32>(coded_text.substr(i, bits)).to_ulong();
+        i += bits;
+
+        if (dictionary.find(nextInt) != dictionary.end()) {
+            word = dictionary[nextInt];
+        } else if (nextInt == dictionary.size()) {
+            word = old + c;
+        }
+
+        this->text += word;
+        if (text.size() == size)
+        {
+            break;
+        }
+        c = word[0];
+
+        if (dictionary.size() <= MAX_DICTIONARY_SIZE || MAX_DICTIONARY_SIZE == 0) {
+            dictionary[dictionary.size()] = old + c;
+        }
+        old = word;
     }
 }
 
-void Decoder::save() {
-    std::cout << "Saving decoded file..." << std::endl;
-
-    std::ofstream decoded_file(this->output_filename);
-    if (!decoded_file.is_open()) {
-        std::cout << "Error opening file " << this->output_filename << std::endl;
-        return;
-    }
-
-    decoded_file << this->text;
-    decoded_file.close();
-}
 
 void Decoder::load() {
     std::cout << "Loading encoded file..." << std::endl;
@@ -46,39 +76,18 @@ void Decoder::load() {
         std::bitset<8> bits(byte);
         encoded_text += bits.to_string();
     }
-
     this->coded_text = encoded_text;
 }
 
+void Decoder::save() {
+    std::cout << "Saving decoded file..." << std::endl;
 
-void Decoder::load_codemap() {
-    std::cout << "Loading codemap..." << std::endl;
-
-    std::ifstream codemap_file(this->codemap_filename);
-    if (!codemap_file.is_open()) {
-        std::cout << "Error opening file " << this->codemap_filename << std::endl;
+    std::ofstream decoded_file(this->output_filename);
+    if (!decoded_file.is_open()) {
+        std::cout << "Error opening file " << this->output_filename << std::endl;
         return;
     }
-    std::string line;
-    while (std::getline(codemap_file, line)) {
-        if (line.length() < 3) {
-            std::cout << "Incorrect line format:  " << line << std::endl;
-            continue;
-        }
-        char character = line[0];
-        std::string code = line.substr(2);
-        this->codemap[code] = character;
-    }
-}
 
-std::string Decoder::get_coded_text() const {
-    return this->coded_text;
-}
-
-std::string Decoder::get_text() const {
-    return this->text;
-}
-
-std::map<std::string, char> Decoder::get_codemap() const {
-    return this->codemap;
+    decoded_file << this->text;
+    decoded_file.close();
 }

@@ -7,7 +7,7 @@ class Decoder : Coder {
 private:
     std::string coded_text;
     std::string text;
-    std::map<std::string, char> codemap;
+
 
 public:
     void code() override;
@@ -16,11 +16,8 @@ public:
 
     using Coder::Coder;
 
-    void load_codemap();
-
     std::string get_coded_text() const;
     std::string get_text() const;
-    std::map<std::string, char> get_codemap() const;
 };
 
 
